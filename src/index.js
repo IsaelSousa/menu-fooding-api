@@ -11,23 +11,46 @@ const io = new Server(server, {
     }
 })
 
-let menuText = "";
-let menuInformation = "";
+
+let rooms = [];
+const roomData = {};
 
 io.on('connection', (socket) => {
-  if (menuText.length > 0) {
-    io.emit('menu', [ menuText, menuInformation ]);
-  }
 
-  socket.on('menu-user', (data) => {
-    io.emit('menu-user', data);
+  socket.on('rooms', (data) => {
+    socket.emit('rooms', rooms);
   });
 
-  socket.on('menu', (data) => {
-    menuText = data[0];
-    menuInformation = data[1];
-    io.emit('menu', data);
+  socket.on('joinCreated', (room) => {
+    socket.join(room);
+    if (!roomData[room]) {
+      roomData[room] = [];
+    }
+
+    io.to(room).emit('userJoined', socket.id);
+
+    if (roomData[room]) {
+      const data = roomData[room];
+      io.to(room).emit('menu', data);
+    }
+
+    if (!rooms.includes(room)) {
+      rooms.push(room);
+    }
+
+    socket.on('menu-user', (data) => {
+      io.to(room).emit('menu-user', data);
+    });
+
+    socket.on('menu', (data) => {
+      if (roomData[room]) {
+        roomData[room].push(data);
+      }
+      const obj = roomData[room];
+      io.to(room).emit('menu', obj);
+    })
   });
+
 });
 
 server.listen(5633, () => console.log('server connected'));
