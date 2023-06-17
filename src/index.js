@@ -38,6 +38,10 @@ io.on('connection', (socket) => {
       rooms.push(room);
     }
 
+    socket.on('menu-user', (data) => {
+      io.to(room).emit('menu-user', data);
+    });
+
     socket.on('menu', (data) => {
       if (roomData[room]) {
         roomData[room].push(data);
